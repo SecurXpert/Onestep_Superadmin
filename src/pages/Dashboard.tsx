@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, UserCheck, Calendar, DollarSign, User, Siren } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, BarChart, Bar } from "recharts";
+import { useToast } from "@/components/ui/use-toast";
 import dashboardHero from "@/assets/dashboard-hero.jpg";
 
 export default function Dashboard() {
+  const { toast } = useToast();
   const [stats, setStats] = useState([
     { title: "Total Doctors", value: "0", icon: UserCheck, color: "text-primary" },
     { title: "Total Patients", value: "0", icon: Users, color: "text-success" },
@@ -18,14 +20,30 @@ export default function Dashboard() {
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
+    if (!token) {
+      toast({
+        title: "Error",
+        description: "Authentication token not found. Please log in.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    };
 
     // Fetch patient counts
     fetch("https://api.onestepmedi.com:8000/patient/count_all", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers,
     })
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Patient count API failed: ${response.status} ${response.statusText}`);
+        }
+        return response.json();
+      })
       .then((data) => {
         setStats((prevStats) =>
           prevStats.map((stat) => {
@@ -40,15 +58,23 @@ export default function Dashboard() {
       })
       .catch((error) => {
         console.error("Error fetching counts:", error);
+        toast({
+          title: "Error",
+          description: `Failed to fetch counts: ${error.message}`,
+          variant: "destructive",
+        });
       });
 
     // Fetch finance data
     fetch("https://api.onestepmedi.com:8000/finance/appointment-income-summary", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers,
     })
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Finance API failed: ${response.status} ${response.statusText}`);
+        }
+        return response.json();
+      })
       .then((data) => {
         if (data.status === "success") {
           // Update Revenue Generated stat
@@ -72,6 +98,67 @@ export default function Dashboard() {
       })
       .catch((error) => {
         console.error("Error fetching finance data:", error);
+        toast({
+          title: "Error",
+          description: `Failed to fetch finance data: ${error.message}`,
+          variant: "destructive",
+        });
+      });
+
+    // Fetch regular appointments
+    fetch("https://api.onestepmedi.com:8000/appointments/appointments/", {
+      method: "GET",
+      headers,
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Appointments API failed: ${response.status} ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        const normalizedData = Array.isArray(data) ? data : [data].filter(Boolean);
+        setStats((prevStats) =>
+          prevStats.map((stat) =>
+            stat.title === "Appointments" ? { ...stat, value: normalizedData.length.toString() } : stat
+          )
+        );
+      })
+      .catch((error) => {
+        console.error("Error fetching appointments:", error);
+        toast({
+          title: "Error",
+          description: `Failed to fetch appointments: ${error.message}`,
+          variant: "destructive",
+        });
+      });
+
+    // Fetch emergency appointments
+    fetch("https://api.onestepmedi.com:8000/emergency/payment_conf_appointments/", {
+      method: "GET",
+      headers,
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Emergency appointments API failed: ${response.status} ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        const normalizedData = Array.isArray(data) ? data : [data].filter(Boolean);
+        setStats((prevStats) =>
+          prevStats.map((stat) =>
+            stat.title === "Emergency Appointments" ? { ...stat, value: normalizedData.length.toString() } : stat
+          )
+        );
+      })
+      .catch((error) => {
+        console.error("Error fetching emergency appointments:", error);
+        toast({
+          title: "Error",
+          description: `Failed to fetch emergency appointments: ${error.message}`,
+          variant: "destructive",
+        });
       });
   }, []);
 

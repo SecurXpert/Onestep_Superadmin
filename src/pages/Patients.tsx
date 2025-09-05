@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Eye, FileText } from "lucide-react";
+import { Search, Eye, FileText, ToggleRight } from "lucide-react";
 
 export default function Patients() {
   const [searchId, setSearchId] = useState("");
@@ -19,7 +19,7 @@ export default function Patients() {
     const fetchPatients = async () => {
       setIsLoading(true);
       try {
-        const token = localStorage.getItem('authToken');
+        const token = localStorage.getItem("authToken");
         const response = await fetch("https://api.onestepmedi.com:8000/patient/all", {
           method: "GET",
           headers: {
@@ -73,6 +73,51 @@ export default function Patients() {
       age--;
     }
     return age;
+  };
+
+  // Handle status toggle
+  const handleStatusToggle = async (patient) => {
+    const newStatus = patient.status === "active" ? "inactive" : "active";
+    
+    if (newStatus === "inactive") {
+      const confirmInactive = window.confirm(
+        `Are you sure you want to mark patient ${patient.name} (ID: ${patient.patient_id}) as inactive?`
+      );
+      if (!confirmInactive) return;
+    }
+
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await fetch("https://api.onestepmedi.com:8000/superadmin/users/status", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          user_id: patient.patient_id,
+          status: newStatus,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update patient status");
+      }
+
+      // Update patient status in state
+      setPatients((prev) =>
+        prev.map((p) =>
+          p.patient_id === patient.patient_id ? { ...p, status: newStatus } : p
+        )
+      );
+      setFilteredPatients((prev) =>
+        prev.map((p) =>
+          p.patient_id === patient.patient_id ? { ...p, status: newStatus } : p
+        )
+      );
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   return (
@@ -131,7 +176,10 @@ export default function Patients() {
               </TableHeader>
               <TableBody>
                 {filteredPatients.map((patient, index) => (
-                  <TableRow key={patient.patient_id || `patient-${index}`}>
+                  <TableRow 
+                    key={patient.patient_id || `patient-${index}`}
+                    className={patient.status === "Inactive" ? "opacity-50" : ""}
+                  >
                     <TableCell className="font-medium">{patient.patient_id || "N/A"}</TableCell>
                     <TableCell>{patient.name || "N/A"}</TableCell>
                     <TableCell>{calculateAge(patient.dob)}</TableCell>
@@ -147,13 +195,22 @@ export default function Patients() {
                           <Eye className="w-4 h-4 mr-1" />
                           Details
                         </Button>
-                        <Button
+                        {/* <Button
                           size="sm"
                           variant="outline"
                           onClick={() => navigate(`/patients/${patient.patient_id || `patient-${index}`}/reports`)}
                         >
                           <FileText className="w-4 h-4 mr-1" />
                           Reports
+                        </Button> */}
+                        <Button
+                          size="sm"
+                          variant={patient.status === "Active" ? "default" : "outline"}
+                          onClick={() => handleStatusToggle(patient)}
+                          className={patient.status === "Active" ? "bg-green-500 hover:bg-green-600" : ""}
+                        >
+                          <ToggleRight className="w-4 h-4 mr-1" />
+                          {patient.status || "Inactive"}
                         </Button>
                       </div>
                     </TableCell>

@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Eye, FileText, Calendar, DollarSign } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -24,6 +25,7 @@ export default function Doctors() {
   const [isPaymentSummaryDialogOpen, setIsPaymentSummaryDialogOpen] = useState(false);
   const [selectedDoctorId, setSelectedDoctorId] = useState(null);
   const [paymentSummaries, setPaymentSummaries] = useState([]);
+  const [specializations, setSpecializations] = useState([]);
   const [formData, setFormData] = useState({
     doctor_name: "",
     email: "",
@@ -38,7 +40,7 @@ export default function Doctors() {
     work_location: "",
     clinic_location: "",
     dm_amount: "",
-    image: null as File | null,
+    image: null,
   });
   const [specializationFormData, setSpecializationFormData] = useState({
     specialization_name: "",
@@ -75,7 +77,7 @@ export default function Doctors() {
         const data = await response.json();
         setDoctors(data);
         setFilteredDoctors(data);
-      } catch (error: any) {
+      } catch (error) {
         console.error("Error fetching doctors:", error);
         setError(error.message || "Failed to fetch doctors");
         setDoctors([]);
@@ -85,13 +87,42 @@ export default function Doctors() {
       }
     };
 
+    const fetchSpecializations = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        if (!token) {
+          throw new Error("No access token found");
+        }
+
+        const response = await fetch("https://api.onestepmedi.com:8000/specializations/", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error("Unauthorized: Invalid or expired token");
+          }
+          throw new Error("Failed to fetch specializations");
+        }
+        const data = await response.json();
+        setSpecializations(data);
+      } catch (error) {
+        console.error("Error fetching specializations:", error);
+        setError(error.message || "Failed to fetch specializations");
+        setSpecializations([]);
+      }
+    };
+
     fetchDoctors();
+    fetchSpecializations();
   }, []);
 
   const handleSearch = () => {
     if (searchId.trim()) {
       setFilteredDoctors(
-        doctors.filter((doc: any) =>
+        doctors.filter((doc) =>
           doc.doctor_id.toLowerCase().includes(searchId.toLowerCase())
         )
       );
@@ -100,7 +131,7 @@ export default function Doctors() {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e) => {
     const { name, value, files } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -108,7 +139,7 @@ export default function Doctors() {
     }));
   };
 
-  const handleSpecializationInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSpecializationInputChange = (e) => {
     const { name, value } = e.target;
     setSpecializationFormData((prev) => ({
       ...prev,
@@ -116,11 +147,18 @@ export default function Doctors() {
     }));
   };
 
-  const handleSlotFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSlotFileChange = (e) => {
     setSlotFile(e.target.files ? e.target.files[0] : null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSpecializationChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      specialization_id: value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("authToken");
@@ -170,13 +208,13 @@ export default function Doctors() {
         dm_amount: "",
         image: null,
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error creating doctor:", error);
       setError(error.message || "Failed to create doctor");
     }
   };
 
-  const handleSpecializationSubmit = async (e: React.FormEvent) => {
+  const handleSpecializationSubmit = async (e) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("authToken");
@@ -214,13 +252,13 @@ export default function Doctors() {
         specialization_name: "",
         emergency_consultation_fee: 0,
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error adding specialization:", error);
       setError(error.message || "Failed to add specialization");
     }
   };
 
-  const handleAddSlotsSubmit = async (e: React.FormEvent) => {
+  const handleAddSlotsSubmit = async (e) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("authToken");
@@ -251,13 +289,13 @@ export default function Doctors() {
 
       setIsAddSlotsDialogOpen(false);
       setSlotFile(null);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error uploading slots:", error);
       setError(error.message || "Failed to upload slots");
     }
   };
 
-  const handleViewSlots = async (doctorId: string) => {
+  const handleViewSlots = async (doctorId) => {
     try {
       const token = localStorage.getItem("authToken");
       if (!token) {
@@ -284,13 +322,13 @@ export default function Doctors() {
       const data = await response.json();
       setSlotsData(data);
       setIsViewSlotsDialogOpen(true);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error fetching slots:", error);
       setError(error.message || "Failed to fetch slots");
     }
   };
 
-  const handlePaymentSummary = async (doctorId: string) => {
+  const handlePaymentSummary = async (doctorId) => {
     try {
       const token = localStorage.getItem("authToken");
       if (!token) {
@@ -312,7 +350,7 @@ export default function Doctors() {
 
       const data = await response.json();
       const summaries = Array.isArray(data.summary) ? data.summary : [data.summary];
-      const transformedSummaries = summaries.map((summary: any) => ({
+      const transformedSummaries = summaries.map((summary) => ({
         ...summary,
         total_appointments:
           typeof summary.total_appointments === "object"
@@ -337,7 +375,7 @@ export default function Doctors() {
       }));
       setPaymentSummaries(transformedSummaries);
       setIsPaymentSummaryDialogOpen(true);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error fetching payment summaries:", error);
       setError(error.message || "Failed to fetch payment summaries");
       setPaymentSummaries([]);
@@ -417,14 +455,24 @@ export default function Doctors() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="specialization_id">Specialization ID *</Label>
-                <Input
-                  id="specialization_id"
+                <Label htmlFor="specialization_id">Specialization *</Label>
+                <Select
                   name="specialization_id"
                   value={formData.specialization_id}
-                  onChange={handleInputChange}
+                  onValueChange={handleSpecializationChange}
                   required
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select specialization" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {specializations.map((spec) => (
+                      <SelectItem key={spec.id} value={spec.id.toString()}>
+                        {spec.specialization_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="experience_years">Experience Years *</Label>
@@ -614,7 +662,7 @@ export default function Doctors() {
               <Label>Select Date</Label>
               <DatePicker
                 selected={selectedDate}
-                onChange={(date: Date) => {
+                onChange={(date) => {
                   setSelectedDate(date);
                   if (selectedDoctorId) {
                     handleViewSlots(selectedDoctorId);
@@ -628,7 +676,7 @@ export default function Doctors() {
                 <h3 className="font-semibold">Available Slots</h3>
                 {slotsData.available_slots?.length > 0 ? (
                   <ul className="list-disc pl-5">
-                    {slotsData.available_slots.map((slot: any, index: number) => (
+                    {slotsData.available_slots.map((slot, index) => (
                       <li key={index}>{slot.time_slot}</li>
                     ))}
                   </ul>
@@ -640,7 +688,7 @@ export default function Doctors() {
                 <h3 className="font-semibold">Booked Slots</h3>
                 {slotsData.booked_slots?.length > 0 ? (
                   <ul className="list-disc pl-5">
-                    {slotsData.booked_slots.map((slot: any, index: number) => (
+                    {slotsData.booked_slots.map((slot, index) => (
                       <li key={index}>{slot.time_slot}</li>
                     ))}
                   </ul>
@@ -681,7 +729,7 @@ export default function Doctors() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paymentSummaries.map((summary: any, index: number) => (
+                    {paymentSummaries.map((summary, index) => (
                       <TableRow key={index} className="hover:bg-gray-50 transition-colors">
                         <TableCell className="px-4 py-2 text-sm text-gray-600">{summary.doctor_name}</TableCell>
                         <TableCell className="px-4 py-2 text-sm text-gray-600">{summary.specialization.specialization_name}</TableCell>
@@ -749,7 +797,7 @@ export default function Doctors() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredDoctors.map((doctor: any) => (
+              {filteredDoctors.map((doctor) => (
                 <TableRow key={doctor.doctor_id}>
                   <TableCell className="font-medium">{doctor.doctor_id}</TableCell>
                   <TableCell>{doctor.doctor_name}</TableCell>

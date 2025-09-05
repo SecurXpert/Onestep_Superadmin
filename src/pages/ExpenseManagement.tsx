@@ -38,17 +38,24 @@ export default function ExpenseManagement() {
           throw new Error("Failed to fetch transactions data");
         }
         const transactionsResult = await transactionsResponse.json();
-        const formattedTransactions = Array.isArray(transactionsResult.payments) ? transactionsResult.payments : [];
-        setTransactions(formattedTransactions.map((payment) => ({
-          id: payment.transaction_id,
-          type: payment.amount > 0 ? "Income" : "Settlement",
-          amount: payment.amount,
-          description: payment.description,
-          date: payment.date,
-        })));
+
+        // Ensure transactionsResult.summary is an array
+        const transactionsArray = Array.isArray(transactionsResult.summary) ? transactionsResult.summary : [];
+
+        // Map transactions
+        const formattedTransactions = transactionsArray
+          .filter(doctor => Array.isArray(doctor.payments) && doctor.payments.length > 0)
+          .flatMap(doctor => doctor.payments.map(payment => ({
+            id: payment.transaction_id,
+            type: payment.amount > 0 ? "Income" : "Settlement",
+            amount: payment.amount,
+            description: `${payment.description} for ${doctor.doctor_name} (${doctor.specialization.specialization_name})`,
+            date: payment.date,
+          })));
+        setTransactions(formattedTransactions);
         setError(null);
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching data:", err);
         setError("Failed to load financial data");
         setFinanceData(null);
         setTransactions([]);

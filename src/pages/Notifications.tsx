@@ -50,19 +50,18 @@ export default function Notifications() {
       const today = now.toISOString().split("T")[0];
 
       // Process emergency notifications
-      const emergencyNotifications = Array.isArray(emergencyData) ? emergencyData : []
-        .map(appointment => ({
-          id: appointment.appointment_id,
-          type: "emergency",
-          title: "Emergency Appointment Request",
-          message: `Patient ${appointment.name} has requested an emergency appointment for ${appointment.problem_description}`,
-          time: formatTimeAgo(appointment.created_at),
-          read: false,
-          created_at: appointment.created_at
-        }));
+      const emergencyNotifications = Array.isArray(emergencyData) ? emergencyData.map(appointment => ({
+        id: appointment.appointment_id,
+        type: "emergency",
+        title: "Emergency Appointment Request",
+        message: `Patient ${appointment.name || 'Unknown'} has requested an emergency appointment for ${appointment.problem_description || 'No description'}`,
+        time: formatTimeAgo(appointment.created_at),
+        read: false,
+        created_at: appointment.created_at
+      })) : [];
 
       // Process regular appointments (including 30min/5min reminders)
-      const appointmentNotifications = Array.isArray(appointmentsData) ? appointmentsData : []
+      const appointmentNotifications = Array.isArray(appointmentsData) ? appointmentsData
         .filter(apt => {
           const aptDateTime = new Date(`${apt.preferred_date}T${apt.time_slot}`);
           const timeDiff = (aptDateTime - now) / 60000; // minutes
@@ -72,11 +71,11 @@ export default function Notifications() {
           id: appointment.appointment_id,
           type: appointment.status === "confirmed" ? "success" : "info",
           title: appointment.status === "confirmed" ? "Appointment Confirmed" : "Appointment Scheduled",
-          message: `Appointment with ${appointment.doctor_name} for ${appointment.name} at ${appointment.time_slot}`,
+          message: `Appointment with ${appointment.doctor_name || 'Unknown'} for ${appointment.name || 'Unknown'} at ${appointment.time_slot || 'N/A'}`,
           time: formatTimeAgo(appointment.created_at),
           read: false,
           created_at: appointment.created_at
-        }));
+        })) : [];
 
       // Combine and sort notifications by created_at
       const allNotifications = [...emergencyNotifications, ...appointmentNotifications]
@@ -239,7 +238,7 @@ export default function Notifications() {
                       )}
                     </div>
                     <p className="text-muted-foreground text-sm mb-2">
-                      {notification.message}
+                      {notification.message || 'No message available'} {/* Ensure message is displayed */}
                     </p>
                     <span className="text-xs text-muted-foreground">
                       {notification.time}
