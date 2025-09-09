@@ -5,11 +5,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DollarSign, Home } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function ExpenseManagement() {
   const [financeData, setFinanceData] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [error, setError] = useState(null);
+  const [file, setFile] = useState(null);
+  const [openDialog, setOpenDialog] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,6 +72,62 @@ export default function ExpenseManagement() {
     fetchData();
   }, []);
 
+  const handleFileChange = (event) => {
+    const selectedFile = event.target.files[0];
+    if (selectedFile && selectedFile.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+      setFile(selectedFile);
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Invalid File",
+        description: "Please upload a valid Excel (.xlsx) file.",
+      });
+      setFile(null);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file) {
+      toast({
+        variant: "destructive",
+        title: "No File Selected",
+        description: "Please select an Excel file to upload.",
+      });
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const token = localStorage.getItem("authToken");
+      const response = await fetch("https://api.onestepmedi.com:8000/dm-leads/lead_url", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to upload file");
+      }
+
+      toast({
+        title: "Success",
+        description: "Excel file uploaded successfully!",
+      });
+      setOpenDialog(false);
+      setFile(null);
+    } catch (err) {
+      console.error("Error uploading file:", err);
+      toast({
+        variant: "destructive",
+        title: "Upload Failed",
+        description: "Failed to upload the Excel file. Please try again.",
+      });
+    }
+  };
+
   if (error) {
     return <div className="text-red-500 text-center p-6">{error}</div>;
   }
@@ -106,6 +169,29 @@ export default function ExpenseManagement() {
         <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
           Financial Management
         </h1>
+        <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+          <DialogTrigger asChild>
+            <Button>With Doctor DM</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Upload Doctor DM Excel</DialogTitle>
+              <DialogDescription>
+                Please upload an Excel file containing Doctor DM data.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Input
+                type="file"
+                accept=".xlsx"
+                onChange={handleFileChange}
+              />
+              <Button onClick={handleUpload} disabled={!file}>
+                Submit
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Financial Stats */}
