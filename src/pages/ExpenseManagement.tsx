@@ -6,16 +6,18 @@ import { DollarSign, Home } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function ExpenseManagement() {
   const [financeData, setFinanceData] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [error, setError] = useState(null);
-  const [file, setFile] = useState(null);
-  const [openDialog, setOpenDialog] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [doctorId, setDoctorId] = useState("");
+  const [leadUrl, setLeadUrl] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -72,58 +74,40 @@ export default function ExpenseManagement() {
     fetchData();
   }, []);
 
-  const handleFileChange = (event) => {
-    const selectedFile = event.target.files[0];
-    if (selectedFile && selectedFile.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
-      setFile(selectedFile);
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Invalid File",
-        description: "Please upload a valid Excel (.xlsx) file.",
-      });
-      setFile(null);
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!file) {
-      toast({
-        variant: "destructive",
-        title: "No File Selected",
-        description: "Please select an Excel file to upload.",
-      });
-      return;
-    }
-
+  const handleSubmitDM = async () => {
     try {
-      const formData = new FormData();
-      formData.append("file", file);
       const token = localStorage.getItem("authToken");
+      const headers = {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      };
+
       const response = await fetch("https://api.onestepmedi.com:8000/dm-leads/lead_url", {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-        body: formData,
+        headers,
+        body: JSON.stringify({
+          doctor_id: doctorId,
+          lead_url: leadUrl,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to upload file");
+        throw new Error("Failed to send DM");
       }
 
       toast({
         title: "Success",
-        description: "Excel file uploaded successfully!",
+        description: "Doctor DM sent successfully",
       });
-      setOpenDialog(false);
-      setFile(null);
+      setIsDialogOpen(false);
+      setDoctorId("");
+      setLeadUrl("");
     } catch (err) {
-      console.error("Error uploading file:", err);
+      console.error("Error sending DM:", err);
       toast({
+        title: "Error",
+        description: "Failed to send Doctor DM",
         variant: "destructive",
-        title: "Upload Failed",
-        description: "Failed to upload the Excel file. Please try again.",
       });
     }
   };
@@ -169,26 +153,34 @@ export default function ExpenseManagement() {
         <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
           Financial Management
         </h1>
-        <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>With Doctor DM</Button>
+            <Button>Doctor DM</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Upload Doctor DM Excel</DialogTitle>
-              <DialogDescription>
-                Please upload an Excel file containing Doctor DM data.
-              </DialogDescription>
+              <DialogTitle>Send Doctor DM</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
-              <Input
-                type="file"
-                accept=".xlsx"
-                onChange={handleFileChange}
-              />
-              <Button onClick={handleUpload} disabled={!file}>
-                Submit
-              </Button>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="doctorId">Doctor ID</Label>
+                <Input
+                  id="doctorId"
+                  value={doctorId}
+                  onChange={(e) => setDoctorId(e.target.value)}
+                  placeholder="Enter Doctor ID"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="leadUrl">Lead URL</Label>
+                <Input
+                  id="leadUrl"
+                  value={leadUrl}
+                  onChange={(e) => setLeadUrl(e.target.value)}
+                  placeholder="Enter Lead URL"
+                />
+              </div>
+              <Button onClick={handleSubmitDM}>Submit</Button>
             </div>
           </DialogContent>
         </Dialog>
