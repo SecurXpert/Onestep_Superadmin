@@ -20,6 +20,7 @@ const DoctorPortfolio = () => {
   const [videos, setVideos] = useState([]);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+    const [selectedTab, setSelectedTab] = useState('experience');
 
   const isPortfolioRoute = location.pathname.includes('/portfolio');
 
@@ -38,9 +39,13 @@ const DoctorPortfolio = () => {
     scrollToCard(scrollRef, activeIndex, 320);
   }, [activeIndex]);
 
+
   useEffect(() => {
     scrollToCard(reviewScrollRef, reviewActiveIndex, 300); // assume review card width ~300
   }, [reviewActiveIndex]);
+
+
+  
 
   // useEffect(() => {
   //   const fetchDoctorData = async () => {
@@ -255,7 +260,7 @@ useEffect(() => {
             <div className="md:w-1/3 flex flex-col items-center">
               <img src={doctorData.profile_img_left} alt="Doctor" className="w-54 h-70 rounded-lg object-cover mb-2" />
             </div>
-            <div className="md:w-2/3">
+            {/* <div className="md:w-2/3">
               <span className="inline-block bg-gradient-to-r from-blue-500 to-blue-300 text-white font-semibold px-5 py-2 rounded-tl-lg rounded-br-lg">
                 <span className="text-black font-semibold">About</span>{' '}
                 <span className="text-white font-medium">Dr. {doctorData.name}</span>
@@ -279,21 +284,75 @@ useEffect(() => {
                   <button className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded">Know More !</button>
                 </div>
               </div>
-            </div>
-          </div>
+            </div> */}
+<div className="md:w-2/3">
+  <span className="inline-block bg-gradient-to-r from-blue-500 to-blue-300 text-white font-semibold px-5 py-2 rounded-tl-lg rounded-br-lg">
+    <span className="text-black font-semibold">About</span>{' '}
+    <span className="text-white font-medium">Dr. {doctorData.name}</span>
+  </span>
+  <div className="bg-white rounded-b px-2 py-2 border-l-2 border-blue-500">
+    <p className="text-gray-700">{doctorData.about}</p>
+    <div className="p-4">
+      <div className="mt-4 flex flex-wrap gap-3">
+        {Array.isArray(sections) && sections.length > 0 ? (
+          [...new Set(sections.map(tab => tab.section_type))].map((type, index) => (
+            <button
+              key={index}
+              onClick={() => setSelectedTab(type)}
+              className={`${
+                type === selectedTab
+                  ? type === 'experience'
+                    ? 'bg-red-200 text-red-600'
+                    : 'bg-blue-200 text-blue-600'
+                  : type === 'experience'
+                    ? 'bg-red-100 text-red-500'
+                    : 'bg-blue-100 text-blue-500'
+              } font-semibold px-4 py-1 rounded shadow cursor-pointer`}
+            >
+              {type}
+            </button>
+          ))
+        ) : (
+          <p className="text-gray-500">No sections available</p>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-4 mt-4">
+        {Array.isArray(sections) && sections.length > 0 ? (
+          sections
+            .filter(hosp => hosp.section_type === selectedTab)
+            .map((hosp, idx) => (
+              <div key={idx} className="flex items-center gap-2 bg-gray-100 px-3 py-2 rounded">
+                <img src={hosp.image_url} alt={hosp.section_type} className="w-10 h-10 object-contain" />
+              </div>
+            ))
+        ) : (
+          <p className="text-gray-500">No affiliations available</p>
+        )}
+      </div>
+    </div>
+    <div className="mt-3 flex gap-2">
+      <button className="bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded">Consult Now</button>
+      <button className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded">Know More !</button>
+    </div>
+  </div>
+</div>
         </div>
 
-        <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-md p-6 mt-8">
-          <h2 className="text-xl font-bold mb-4">Medical Expertise</h2>
-          <div className="flex flex-wrap gap-4">
-            {expertise.map((expert, idx) => (
-              <div key={idx} className="flex flex-col items-center w-32 bg-gray-50 rounded-lg py-2 shadow border">
-                <img src={expert.image_url} alt="Expert" className="w-16 h-16 rounded-full object-cover mb-1" />
-                <span className="font-semibold text-sm">{expert.description}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+<div className="max-w-6xl mx-auto bg-white rounded-xl shadow-md p-6 mt-8">
+  <h2 className="text-xl font-bold mb-4 text-gray-900">Medical Expertise</h2>
+  <div className="flex flex-wrap gap-6">
+    {expertise.map((expert, idx) => (
+      <div key={idx} className="flex flex-col items-center w-48 bg-gray-50 rounded-lg py-4 shadow border border-gray-200">
+        <img src={expert.image_url} alt="Expert" className="w-24 h-24 rounded-full object-cover mb-4" />
+        {expert.description ? (
+          <span className="font-semibold text-sm text-center text-blue-900 line-clamp-3 px-3">{expert.description}</span>
+        ) : (
+          <span className="text-sm text-center text-gray-500 italic">No description available</span>
+        )}
+      </div>
+    ))}
+  </div>
+</div>
 
         <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-md p-6 mt-8">
           <h2 className="text-xl font-bold mb-3">Clinic Location</h2>
@@ -489,6 +548,7 @@ useEffect(() => {
 </div>
         </div>
       </div>
+      </div>
     );
   }
 
@@ -558,32 +618,57 @@ useEffect(() => {
           <div className="md:w-1/3 flex flex-col items-center">
             <img src={doctorData.profile_img_left} alt="Doctor" className="w-44 h-44 rounded-lg object-cover mb-2" />
           </div>
-          <div className="md:w-2/3">
-            <span className="inline-block bg-gradient-to-r from-blue-500 to-blue-300 text-white font-semibold px-5 py-2 rounded-tl-lg rounded-br-lg">
-              <span className="text-black font-semibold">About</span>{' '}
-              <span className="text-white font-medium">Dr. {doctorData.name}</span>
-            </span>
-            <div className="bg-white rounded-b px-2 py-2 border-l-2 border-blue-500">
-              <p className="text-gray-700">{doctorData.about}</p>
-              <div className="p-4">
-                {Object.entries(groupedSections).map(([type, images]) => (
-                  <div key={type}>
-                    <h4 className="font-bold mt-4">{type}</h4>
-                    <div className="flex flex-wrap gap-4">
-                      {images.map((url, i) => (
-                        <img key={i} src={url} alt={type} className="w-20 h-20 object-contain" />
-                      ))}
-                    </div>
-                  </div>
-                ))}
+<div className="md:w-2/3">
+  <span className="inline-block bg-gradient-to-r from-blue-500 to-blue-300 text-white font-semibold px-5 py-2 rounded-tl-lg rounded-br-lg">
+    <span className="text-black font-semibold">About</span>{' '}
+    <span className="text-white font-medium">Dr. {doctorData.name}</span>
+  </span>
+  <div className="bg-white rounded-b px-2 py-2 border-l-2 border-blue-500">
+    <p className="text-gray-700">{doctorData.about}</p>
+    <div className="p-4">
+      <div className="mt-4 flex flex-wrap gap-3">
+        {Array.isArray(sections) && sections.length > 0 ? (
+          [...new Set(sections.map(tab => tab.section_type))].map((type, index) => (
+            <button
+              key={index}
+              onClick={() => setSelectedTab(type)}
+              className={`${
+                type === selectedTab
+                  ? type === 'experience'
+                    ? 'bg-red-200 text-red-600'
+                    : 'bg-blue-200 text-blue-600'
+                  : type === 'experience'
+                    ? 'bg-red-100 text-red-500'
+                    : 'bg-blue-100 text-blue-500'
+              } font-semibold px-4 py-1 rounded shadow cursor-pointer`}
+            >
+              {type}
+            </button>
+          ))
+        ) : (
+          <p className="text-gray-500">No sections available</p>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-4 mt-4">
+        {Array.isArray(sections) && sections.length > 0 ? (
+          sections
+            .filter(hosp => hosp.section_type === selectedTab)
+            .map((hosp, idx) => (
+              <div key={idx} className="flex items-center gap-2 bg-gray-100 px-3 py-2 rounded">
+                <img src={hosp.image_url} alt={hosp.section_type} className="w-10 h-10 object-contain" />
               </div>
-              <div className="mt-3 flex gap-2">
-                <button className="bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded">Consult Now</button>
-                <button className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded">Know More !</button>
-              </div>
-            </div>
-          </div>
-        </div>
+            ))
+        ) : (
+          <p className="text-gray-500">No affiliations available</p>
+        )}
+      </div>
+    </div>
+    <div className="mt-3 flex gap-2">
+      <button className="bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded">Consult Now</button>
+      <button className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded">Know More !</button>
+    </div>
+  </div>
+</div>
       </div>
       <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-md p-6 mt-8">
         <h2 className="text-xl font-bold mb-3">Clinic Location</h2>
@@ -643,6 +728,24 @@ useEffect(() => {
           ))}
         </div>
       </div> */}
+
+<div className="max-w-6xl mx-auto bg-white rounded-xl shadow-md p-6 mt-8">
+  <h2 className="text-xl font-bold mb-4 text-gray-900">Medical Expertise</h2>
+  <div className="flex flex-wrap gap-6">
+    {expertise.map((expert, idx) => (
+      <div key={idx} className="flex flex-col items-center w-48 bg-gray-50 rounded-lg py-4 shadow border border-gray-200">
+        <img src={expert.image_url} alt="Expert" className="w-24 h-24 rounded-full object-cover mb-4" />
+        {expert.description ? (
+          <span className="font-semibold text-sm text-center text-blue-900 line-clamp-3 px-3">{expert.description}</span>
+        ) : (
+          <span className="text-sm text-center text-gray-500 italic">No description available</span>
+        )}
+      </div>
+    ))}
+  </div>
+</div>
+
+
       <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-md p-6 mt-8">
         <h2 className="text-xl font-bold mb-4">
           Our Patients Feedback About <span className="text-blue-700">Dr {doctorData.name}</span>
@@ -789,6 +892,7 @@ useEffect(() => {
   </div>
 </div>
       </div>
+    </div>
     </div>
   );
 };
